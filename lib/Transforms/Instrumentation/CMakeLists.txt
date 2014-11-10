@@ -1,5 +1,6 @@
 add_llvm_library(LLVMInstrumentation
   AddressSanitizer.cpp
+  InstrumentMOP.cpp
   BoundsChecking.cpp
   DataFlowSanitizer.cpp
   DebugIR.cpp

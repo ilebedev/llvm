@@ -943,6 +943,23 @@ void X86AsmPrinter::EmitInstruction(const MachineInstr *MI) {
   const X86RegisterInfo *RI = static_cast<const X86RegisterInfo *>(
       TM.getSubtargetImpl()->getRegisterInfo());
 
+  // if memory op, instrument for InstrumentMOP
+  bool mem = false;
+  for (auto i=0; i<MI->getNumOperands(); i++){
+    mem |= isMem(MI, i);
+  }
+
+  if (mem) {
+    // cdecl, no arguments, so no stack cleanup
+    // call
+    OutStreamer.emitRawComment("MEMORY INSTRUMENTATION");
+    EmitAndCountInstruction(MCInstBuilder(X86::CALLpcrel32)
+      .addExpr(MCSymbolRefExpr::Create(StringRef("mop_instrumentation_call"),
+                                       MCSymbolRefExpr::VK_None,
+                                       OutContext)));
+
+  }
+
   switch (MI->getOpcode()) {
   case TargetOpcode::DBG_VALUE:
     llvm_unreachable("Should be handled target independently");

@@ -63,6 +63,9 @@ struct GCOVOptions {
 ModulePass *createGCOVProfilerPass(const GCOVOptions &Options =
                                    GCOVOptions::getDefault());
 
+// Insert InstrumentMOP (instrumenting memory ops)
+FunctionPass *createInstrumentMOPFunctionPass();
+
 // Insert AddressSanitizer (address sanity checking) instrumentation
 FunctionPass *createAddressSanitizerFunctionPass();
 ModulePass *createAddressSanitizerModulePass();

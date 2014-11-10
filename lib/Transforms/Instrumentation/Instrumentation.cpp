@@ -22,6 +22,7 @@ using namespace llvm;
 /// library.
 void llvm::initializeInstrumentation(PassRegistry &Registry) {
   initializeAddressSanitizerPass(Registry);
+  initializeInstrumentMOPPass(Registry);
   initializeAddressSanitizerModulePass(Registry);
   initializeBoundsCheckingPass(Registry);
   initializeGCOVProfilerPass(Registry);

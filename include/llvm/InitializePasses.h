@@ -122,6 +122,7 @@ void initializeEdgeBundlesPass(PassRegistry&);
 void initializeExpandPostRAPass(PassRegistry&);
 void initializeGCOVProfilerPass(PassRegistry&);
 void initializeAddressSanitizerPass(PassRegistry&);
+void initializeInstrumentMOPPass(PassRegistry&);
 void initializeAddressSanitizerModulePass(PassRegistry&);
 void initializeMemorySanitizerPass(PassRegistry&);
 void initializeThreadSanitizerPass(PassRegistry&);
