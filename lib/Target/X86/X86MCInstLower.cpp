@@ -34,10 +34,14 @@
 #include "llvm/MC/MCInstBuilder.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbol.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/TargetRegistry.h"
 using namespace llvm;
 
 namespace {
+
+static cl::opt<bool> ClInstrumentMOP("instrument-mop",
+       cl::desc("instrument all memory accesses with a callback to \"mop_instrumentation_call\""), cl::Hidden, cl::init(false));
 
 /// X86MCInstLower - This class is used to lower an MachineInstr into an MCInst.
 class X86MCInstLower {
@@ -943,21 +947,23 @@ void X86AsmPrinter::EmitInstruction(const MachineInstr *MI) {
   const X86RegisterInfo *RI = static_cast<const X86RegisterInfo *>(
       TM.getSubtargetImpl()->getRegisterInfo());
 
-  // if memory op, instrument for InstrumentMOP
-  bool mem = false;
-  for (auto i=0; i<MI->getNumOperands(); i++){
-    mem |= isMem(MI, i);
-  }
 
-  if (mem) {
-    // cdecl, no arguments, so no stack cleanup
-    // call
-    OutStreamer.emitRawComment("MEMORY INSTRUMENTATION");
-    EmitAndCountInstruction(MCInstBuilder(X86::CALLpcrel32)
-      .addExpr(MCSymbolRefExpr::Create(StringRef("mop_instrumentation_call"),
-                                       MCSymbolRefExpr::VK_None,
-                                       OutContext)));
+  if (ClInstrumentMOP) {
+    // if memory op, instrument for InstrumentMOP
+    bool mem = false;
+    for (auto i=0; i<MI->getNumOperands(); i++){
+      mem |= isMem(MI, i);
+    }
 
+    if (mem) {
+      // cdecl, no arguments, so no stack cleanup
+      // call
+      OutStreamer.emitRawComment("MEMORY INSTRUMENTATION");
+      EmitAndCountInstruction(MCInstBuilder(X86::CALLpcrel32)
+        .addExpr(MCSymbolRefExpr::Create(StringRef("mop_instrumentation_call"),
+                                         MCSymbolRefExpr::VK_None,
+                                         OutContext)));
+    }
   }
 
   switch (MI->getOpcode()) {
