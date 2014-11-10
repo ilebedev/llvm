@@ -58,6 +58,10 @@ Mips16ConstantIslands(
   cl::desc("MIPS: mips16 constant islands enable."),
   cl::init(true));
 
+static cl::opt<bool>
+GPOpt("mgpopt", cl::Hidden,
+      cl::desc("MIPS: Enable gp-relative addressing of small data items"));
+
 /// Select the Mips CPU for the given triple and cpu name.
 /// FIXME: Merge with the copy in MipsMCTargetDesc.cpp
 static StringRef selectMipsCPU(Triple TT, StringRef CPU) {
@@ -106,7 +110,7 @@ MipsSubtarget::MipsSubtarget(const std::string &TT, const std::string &CPU,
                              const std::string &FS, bool little,
                              const MipsTargetMachine *_TM)
     : MipsGenSubtargetInfo(TT, CPU, FS), MipsArchVersion(Mips32),
-      MipsABI(UnknownABI), IsLittle(little), IsSingleFloat(false),
+      ABI(MipsABIInfo::Unknown()), IsLittle(little), IsSingleFloat(false),
       IsFPXX(false), NoABICalls(false), IsFP64bit(false), UseOddSPReg(true),
       IsNaN2008bit(false), IsGP64bit(false), HasVFPU(false), HasCnMips(false),
       IsLinux(true), HasMips3_32(false), HasMips3_32r2(false),
@@ -136,7 +140,7 @@ MipsSubtarget::MipsSubtarget(const std::string &TT, const std::string &CPU,
     report_fatal_error("Code generation for MIPS-V is not implemented", false);
 
   // Assert exactly one ABI was chosen.
-  assert(MipsABI != UnknownABI);
+  assert(ABI.IsKnown());
   assert((((getFeatureBits() & Mips::FeatureO32) != 0) +
           ((getFeatureBits() & Mips::FeatureEABI) != 0) +
           ((getFeatureBits() & Mips::FeatureN32) != 0) +
@@ -171,10 +175,16 @@ MipsSubtarget::MipsSubtarget(const std::string &TT, const std::string &CPU,
   if (TT.find("linux") == std::string::npos)
     IsLinux = false;
 
+  if (NoABICalls && TM->getRelocationModel() == Reloc::PIC_)
+    report_fatal_error("position-independent code requires '-mabicalls'");
+
   // Set UseSmallSection.
-  // TODO: Investigate the IsLinux check. I suspect it's really checking for
-  //       bare-metal.
-  UseSmallSection = !IsLinux && (TM->getRelocationModel() == Reloc::Static);
+  UseSmallSection = GPOpt;
+  if (!NoABICalls && GPOpt) {
+    errs() << "warning: cannot use small-data accesses for '-mabicalls'"
+           << "\n";
+    UseSmallSection = false;
+  }
 }
 
 /// This overrides the PostRAScheduler bit in the SchedModel for any CPU.

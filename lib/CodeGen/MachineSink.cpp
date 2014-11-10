@@ -30,7 +30,6 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetInstrInfo.h"
-#include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetRegisterInfo.h"
 #include "llvm/Target/TargetSubtargetInfo.h"
 using namespace llvm;
@@ -250,9 +249,8 @@ bool MachineSinking::runOnMachineFunction(MachineFunction &MF) {
 
   DEBUG(dbgs() << "******** Machine Sinking ********\n");
 
-  const TargetMachine &TM = MF.getTarget();
-  TII = TM.getSubtargetImpl()->getInstrInfo();
-  TRI = TM.getSubtargetImpl()->getRegisterInfo();
+  TII = MF.getSubtarget().getInstrInfo();
+  TRI = MF.getSubtarget().getRegisterInfo();
   MRI = &MF.getRegInfo();
   DT = &getAnalysis<MachineDominatorTree>();
   PDT = &getAnalysis<MachinePostDominatorTree>();
@@ -486,6 +484,11 @@ bool MachineSinking::isProfitableToSinkTo(unsigned Reg, MachineInstr *MI,
 
   // It is profitable if SuccToSinkTo does not post dominate current block.
   if (!PDT->dominates(SuccToSinkTo, MBB))
+    return true;
+
+  // It is profitable to sink an instruction from a deeper loop to a shallower
+  // loop, even if the latter post-dominates the former (PR21115).
+  if (LI->getLoopDepth(MBB) > LI->getLoopDepth(SuccToSinkTo))
     return true;
 
   // Check if only use in post dominated block is PHI instruction.

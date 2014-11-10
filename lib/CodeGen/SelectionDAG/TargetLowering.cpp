@@ -2241,14 +2241,11 @@ TargetLowering::AsmOperandInfoVector TargetLowering::ParseConstraints(
 
   // Do a prepass over the constraints, canonicalizing them, and building up the
   // ConstraintOperands list.
-  InlineAsm::ConstraintInfoVector
-    ConstraintInfos = IA->ParseConstraints();
-
   unsigned ArgNo = 0;   // ArgNo - The argument of the CallInst.
   unsigned ResNo = 0;   // ResNo - The result number of the next output.
 
-  for (unsigned i = 0, e = ConstraintInfos.size(); i != e; ++i) {
-    ConstraintOperands.push_back(AsmOperandInfo(ConstraintInfos[i]));
+  for (InlineAsm::ConstraintInfo &CI : IA->ParseConstraints()) {
+    ConstraintOperands.emplace_back(std::move(CI));
     AsmOperandInfo &OpInfo = ConstraintOperands.back();
 
     // Update multiple alternative constraint count.
@@ -2327,7 +2324,7 @@ TargetLowering::AsmOperandInfoVector TargetLowering::ParseConstraints(
   }
 
   // If we have multiple alternative constraints, select the best alternative.
-  if (ConstraintInfos.size()) {
+  if (ConstraintOperands.size()) {
     if (maCount) {
       unsigned bestMAIndex = 0;
       int bestWeight = -1;
@@ -2706,7 +2703,7 @@ SDValue TargetLowering::BuildUDIV(SDNode *N, const APInt &Divisor,
                                   SelectionDAG &DAG, bool IsAfterLegalization,
                                   std::vector<SDNode *> *Created) const {
   assert(Created && "No vector to hold udiv ops.");
-  
+
   EVT VT = N->getValueType(0);
   SDLoc dl(N);
 
@@ -2783,7 +2780,7 @@ verifyReturnAddressArgumentIsConstant(SDValue Op, SelectionDAG &DAG) const {
 
 bool TargetLowering::expandMUL(SDNode *N, SDValue &Lo, SDValue &Hi, EVT HiLoVT,
                                SelectionDAG &DAG, SDValue LL, SDValue LH,
-			       SDValue RL, SDValue RH) const {
+                               SDValue RL, SDValue RH) const {
   EVT VT = N->getValueType(0);
   SDLoc dl(N);
 
@@ -2816,8 +2813,8 @@ bool TargetLowering::expandMUL(SDNode *N, SDValue &Lo, SDValue &Hi, EVT HiLoVT,
       // The inputs are both zero-extended.
       if (HasUMUL_LOHI) {
         // We can emit a umul_lohi.
-        Lo = DAG.getNode(ISD::UMUL_LOHI, dl,
-	                 DAG.getVTList(HiLoVT, HiLoVT), LL, RL);
+        Lo = DAG.getNode(ISD::UMUL_LOHI, dl, DAG.getVTList(HiLoVT, HiLoVT), LL,
+                         RL);
         Hi = SDValue(Lo.getNode(), 1);
         return true;
       }
@@ -2832,8 +2829,8 @@ bool TargetLowering::expandMUL(SDNode *N, SDValue &Lo, SDValue &Hi, EVT HiLoVT,
       // The input values are both sign-extended.
       if (HasSMUL_LOHI) {
         // We can emit a smul_lohi.
-        Lo = DAG.getNode(ISD::SMUL_LOHI, dl,
-	                 DAG.getVTList(HiLoVT, HiLoVT), LL, RL);
+        Lo = DAG.getNode(ISD::SMUL_LOHI, dl, DAG.getVTList(HiLoVT, HiLoVT), LL,
+                         RL);
         Hi = SDValue(Lo.getNode(), 1);
         return true;
       }

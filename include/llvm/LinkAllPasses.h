@@ -34,6 +34,7 @@
 #include "llvm/Transforms/ObjCARC.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Utils/UnifyFunctionExitNodes.h"
+#include "llvm/Transforms/Utils/SymbolRewriter.h"
 #include "llvm/Transforms/Vectorize.h"
 #include <cstdlib>
 
@@ -163,6 +164,7 @@ namespace {
       (void) llvm::createPartiallyInlineLibCallsPass();
       (void) llvm::createScalarizerPass();
       (void) llvm::createSeparateConstOffsetFromGEPPass();
+      (void) llvm::createRewriteSymbolsPass();
 
       (void)new llvm::IntervalPartition();
       (void)new llvm::FindUsedTypes();
@@ -171,7 +173,7 @@ namespace {
       llvm::RGPassManager RGM;
       ((llvm::RegionPass*)nullptr)->runOnRegion((llvm::Region*)nullptr, RGM);
       llvm::AliasSetTracker X(*(llvm::AliasAnalysis*)nullptr);
-      X.add((llvm::Value*)nullptr, 0, nullptr);  // for -print-alias-sets
+      X.add(nullptr, 0, llvm::AAMDNodes()); // for -print-alias-sets
     }
   } ForcePassLinking; // Force link by creating a global definition.
 }

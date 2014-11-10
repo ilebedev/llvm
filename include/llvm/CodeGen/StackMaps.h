@@ -142,7 +142,7 @@ private:
 
   typedef SmallVector<Location, 8> LocationVec;
   typedef SmallVector<LiveOutReg, 8> LiveOutVec;
-  typedef MapVector<int64_t, int64_t> ConstantPool;
+  typedef MapVector<uint64_t, uint64_t> ConstantPool;
   typedef MapVector<const MCSymbol *, uint64_t> FnStackSizeMap;
 
   struct CallsiteInfo {
@@ -152,9 +152,9 @@ private:
     LiveOutVec LiveOuts;
     CallsiteInfo() : CSOffsetExpr(nullptr), ID(0) {}
     CallsiteInfo(const MCExpr *CSOffsetExpr, uint64_t ID,
-                 LocationVec &Locations, LiveOutVec &LiveOuts)
-      : CSOffsetExpr(CSOffsetExpr), ID(ID), Locations(Locations),
-        LiveOuts(LiveOuts) {}
+                 LocationVec &&Locations, LiveOutVec &&LiveOuts)
+      : CSOffsetExpr(CSOffsetExpr), ID(ID), Locations(std::move(Locations)),
+        LiveOuts(std::move(LiveOuts)) {}
   };
 
   typedef std::vector<CallsiteInfo> CallsiteInfoList;
